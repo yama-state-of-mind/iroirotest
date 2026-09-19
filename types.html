@@ -21,6 +21,15 @@
 </head>
 <body>
 
+<header class="scroll-header" id="scroll-header">
+  <a href="index.html" class="sh-logo">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 6 L34 32 L6 32 Z" fill="#1E3A31"/><path d="M20 6 L25 16 L15 16 Z" fill="#E0A33B"/></svg>
+    登山タイプ診断
+  </a>
+  <a href="index.html" class="sh-cta">診断をはじめる</a>
+</header>
+
+
 <div class="list-page">
 
   <header class="list-head">
@@ -283,6 +292,27 @@ document.getElementById("group-body").addEventListener("click", (e) => {
 
 window.addEventListener("popstate", routeFromURL);
 routeFromURL();
+
+/* スクロール追従ヘッダー（このページは常時「トップページ相当」の扱いでよい） */
+(function initScrollHeader() {
+  const header = document.getElementById("scroll-header");
+  if (!header) return;
+  let lastY = window.scrollY;
+  let ticking = false;
+  function onScroll() {
+    const y = window.scrollY;
+    if (y < 80) header.classList.remove("show");
+    else if (y < lastY) header.classList.add("show");
+    else if (y > lastY) header.classList.remove("show");
+    lastY = y;
+  }
+  window.addEventListener("scroll", () => {
+    if (!ticking) {
+      requestAnimationFrame(() => { onScroll(); ticking = false; });
+      ticking = true;
+    }
+  }, { passive: true });
+})();
 </script>
 </body>
 </html>

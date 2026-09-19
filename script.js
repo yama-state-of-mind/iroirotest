@@ -272,6 +272,56 @@ function renderAboutSection() {
 }
 renderAboutSection();
 
+/* =========================================================
+   スクロール追従ヘッダー
+   下スクロールで隠れ、上スクロールでスッと出てくる。
+   質問・結果画面では出さない（診断の途中でリセットするミスタップを防ぐため）
+   ========================================================= */
+(function initScrollHeader() {
+  const header = document.getElementById("scroll-header");
+  if (!header) return;
+
+  let lastY = window.scrollY;
+  let ticking = false;
+
+  function onScroll() {
+    // 質問・結果画面のあいだは、スクロールに関わらずヘッダーを出さない
+    const startActive = document.getElementById("screen-start")?.classList.contains("is-active");
+    if (!startActive) {
+      header.classList.remove("show");
+      lastY = window.scrollY;
+      return;
+    }
+    const y = window.scrollY;
+    if (y < 80) {
+      header.classList.remove("show");   // 一番上の方は本体のCTAが見えているので不要
+    } else if (y < lastY) {
+      header.classList.add("show");      // 上スクロール
+    } else if (y > lastY) {
+      header.classList.remove("show");   // 下スクロール
+    }
+    lastY = y;
+  }
+
+  window.addEventListener("scroll", () => {
+    if (!ticking) {
+      requestAnimationFrame(() => { onScroll(); ticking = false; });
+      ticking = true;
+    }
+  }, { passive: true });
+
+  // 診断をはじめる：トップページ本体の開始ボタンと同じ動作にする
+  document.getElementById("sh-cta")?.addEventListener("click", () => {
+    document.getElementById("btn-start")?.click();
+    header.classList.remove("show");
+  });
+  document.getElementById("sh-logo")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    header.classList.remove("show");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+})();
+
 /* 結果画面から「診断の仕組み」を押したとき：
    aboutセクションはスタート画面の中にあるので、まずスタート画面に戻ってからスクロールする */
 const linkAboutFromResult = document.getElementById("link-about-from-result");
