@@ -802,7 +802,7 @@ body {
   z-index: 60;
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
   padding: 10px 16px;
   padding-top: max(10px, env(safe-area-inset-top));
   background: rgba(243, 246, 244, .92);
@@ -813,6 +813,8 @@ body {
 }
 .scroll-header.show { transform: translateY(0); }
 .sh-logo {
+  position: absolute;
+  left: 16px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -823,7 +825,6 @@ body {
 }
 .sh-logo svg { width: 22px; height: 22px; flex: none; }
 .sh-cta {
-  margin-left: auto;
   border: none;
   cursor: pointer;
   text-decoration: none;
@@ -930,6 +931,13 @@ body {
   justify-content: center;
   flex-wrap: nowrap;
   gap: 10px;
+}
+.hero-divider {
+  margin: 22px auto 0;
+  width: 100%;
+  max-width: 220px;
+  border: none;
+  border-top: 1px solid var(--line);
 }
 .result .hero-link { margin-top: 20px; }
 .hero-link a {
@@ -1965,37 +1973,35 @@ body {
 .about-lead h2 { font-size: 20px; font-weight: 900; }
 .about-lead p { font-size: 13px; color: var(--stone); margin-top: 6px; line-height: 1.8; }
 
-/* PC/タブレット幅：about全体（4軸・生息エリア・マトリクス）を1つの幅に統一。
-   広がった余白には、ランダムに配置したキャラクターを散らす（JSで生成） */
+/* PC/タブレット幅：about全体（4軸・生息エリア・マトリクス）を1つの幅に統一。 */
 .about-inner, #about-matrix-wrap {
   max-width: 480px;
   margin: 0 auto;
 }
 #about-matrix-wrap { margin-top: 8px; }
 
-#about-outer { position: relative; }
-.about-scatter { display: none; }
-@media (min-width: 768px) {
-  .about-scatter {
-    display: block;
-    position: absolute;
-    top: 0;
-    width: 110px;
-    pointer-events: none;
-  }
-  .about-scatter.left { left: calc(50% - 480px - 40px); }
-  .about-scatter.right { right: calc(50% - 480px - 40px); }
-  .scatter-char {
-    position: absolute;
-    animation: scatterFloat var(--sf-d, 4.2s) ease-in-out infinite;
-  }
-  @keyframes scatterFloat {
-    0%, 100% { transform: translateY(0) rotate(var(--sf-r, 0deg)); }
-    50%      { transform: translateY(-7px) rotate(var(--sf-r, 0deg)); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .scatter-char { animation: none; }
-  }
+/* =========================================================
+   余白のキャラクター散らし（ページ全体・全画面共通）
+   body直下の全高レイヤーに、JSで動的に配置する
+   ========================================================= */
+#scatter-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+.scatter-char {
+  position: absolute;
+  animation: scatterFloat var(--sf-d, 4.2s) ease-in-out infinite;
+}
+@keyframes scatterFloat {
+  0%, 100% { transform: translateY(0) rotate(var(--sf-r, 0deg)); }
+  50%      { transform: translateY(-10px) rotate(var(--sf-r, 0deg)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scatter-char { animation: none; }
 }
 
 /* マトリクスのキャラクターにふわふわ浮く動きを付ける（山クラスターと同じ言葉づかい） */

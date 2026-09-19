@@ -230,6 +230,8 @@ function showGroup(key, anchor) {
   } else {
     window.scrollTo({ top: 0 });
   }
+  // タブ切り替えで高さが変わるので、余白のキャラクターも位置を計算し直す
+  requestAnimationFrame(() => { if (typeof renderScatterChars === "function") renderScatterChars(); });
 }
 
 /* ---------- URLから初期表示を決める ----------
@@ -313,6 +315,63 @@ routeFromURL();
     }
   }, { passive: true });
 })();
+
+/* 余白のキャラクター散らし（トップページと同じ考え方。このページは幅720pxのため半幅を360で計算） */
+function renderScatterChars() {
+  try {
+    if (window.innerWidth < 768) {
+      const old = document.getElementById("scatter-layer");
+      if (old) old.remove();
+      return;
+    }
+    let layer = document.getElementById("scatter-layer");
+    if (!layer) {
+      layer = document.createElement("div");
+      layer.id = "scatter-layer";
+      document.body.insertBefore(layer, document.body.firstChild);
+    }
+    layer.innerHTML = "";
+    const height = Math.max(document.body.scrollHeight, window.innerHeight);
+    layer.style.height = height + "px";
+    const contentHalf = 360;
+
+    const codes = Object.keys(TYPES);
+    const pick = () => codes[Math.floor(Math.random() * codes.length)];
+
+    ["left", "right"].forEach((side) => {
+      const n = Math.max(5, Math.round(height / 280));
+      for (let i = 0; i < n; i++) {
+        const size = 60 + Math.random() * 46;
+        const top = (height / n) * i + Math.random() * 60;
+        const bandOffset = Math.random() * 90;
+        const edge = `calc(50% + ${contentHalf + 24 + bandOffset}px)`;
+        const rot = (Math.random() * 20 - 10).toFixed(1);
+        const dur = (3.2 + Math.random() * 2.2).toFixed(2);
+        const delay = (Math.random() * 3).toFixed(2);
+        const el = document.createElement("div");
+        el.className = "scatter-char";
+        el.style.top = top + "px";
+        el.style.width = size + "px";
+        el.style.opacity = ".85";
+        el.style.setProperty("--sf-r", rot + "deg");
+        el.style.setProperty("--sf-d", dur + "s");
+        el.style.animationDelay = delay + "s";
+        if (side === "left") el.style.right = edge;
+        else el.style.left = edge;
+        el.innerHTML = characterSVG(pick(), "char", true);
+        layer.appendChild(el);
+      }
+    });
+  } catch (err) {
+    console.error("scatter render error", err);
+  }
+}
+renderScatterChars();
+let scatterUpdateTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(scatterUpdateTimer);
+  scatterUpdateTimer = setTimeout(renderScatterChars, 200);
+});
 </script>
 </body>
 </html>

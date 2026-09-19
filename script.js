@@ -57,6 +57,11 @@ function showScreen(name) {
   Object.values(screens).forEach((s) => s.classList.remove("is-active"));
   screens[name].classList.add("is-active");
   window.scrollTo({ top: 0 });
+  // スクロールに連動して出るヘッダーは、画面が切り替わったら必ず一度隠す
+  // （スクロールイベントを待たずに確実に隠すための保険）
+  document.getElementById("scroll-header")?.classList.remove("show");
+  // 画面ごとに高さが変わるので、余白のキャラクターも位置を計算し直す
+  requestAnimationFrame(() => { if (typeof renderScatterChars === "function") renderScatterChars(); });
 }
 
 
@@ -265,48 +270,79 @@ function renderAboutSection() {
 }
 renderAboutSection();
 
-/* 両サイドの余白を埋める、ランダムに散らしたキャラクター（PC/タブレット幅でのみ見える）。
-   about全体の高さに合わせて個体数を決め、位置・大きさ・傾き・浮く速さをランダムにする */
+/* =========================================================
+   余白のキャラクター散らし（ページ全体・全画面共通）
+   コンテンツ幅の外側（左右の余白）に、ページの高さいっぱいに散らす。
+   全部try/catchで守り、万が一失敗しても他の機能に影響しないようにしてある。
+   ========================================================= */
 function renderScatterChars() {
-  const outer = document.getElementById("about-outer");
-  if (!outer) return;
-  outer.querySelectorAll(".about-scatter").forEach((el) => el.remove());
-
-  const codes = Object.keys(TYPES);
-  const pick = () => codes[Math.floor(Math.random() * codes.length)];
-  const height = outer.offsetHeight;
-  if (!height) return;
-
-  ["left", "right"].forEach((side) => {
-    const wrap = document.createElement("div");
-    wrap.className = "about-scatter " + side;
-    wrap.style.height = height + "px";
-    const n = Math.max(3, Math.round(height / 260));
-    for (let i = 0; i < n; i++) {
-      const size = 46 + Math.random() * 26;
-      const top = (height / n) * i + Math.random() * 30;
-      const left = Math.random() * 30;
-      const rot = (Math.random() * 16 - 8).toFixed(1);
-      const dur = (3.6 + Math.random() * 1.6).toFixed(2);
-      const delay = (Math.random() * 2).toFixed(2);
-      const el = document.createElement("div");
-      el.className = "scatter-char";
-      el.style.cssText =
-        `top:${top}px; left:${left}px; width:${size}px; opacity:.88; ` +
-        `--sf-r:${rot}deg; --sf-d:${dur}s; animation-delay:${delay}s;`;
-      el.innerHTML = characterSVG(pick(), "char", true);
-      wrap.appendChild(el);
+  try {
+    if (window.innerWidth < 768) {
+      const old = document.getElementById("scatter-layer");
+      if (old) old.remove();
+      return;
     }
-    outer.appendChild(wrap);
-  });
+
+    let layer = document.getElementById("scatter-layer");
+    if (!layer) {
+      layer = document.createElement("div");
+      layer.id = "scatter-layer";
+      document.body.insertBefore(layer, document.body.firstChild);
+    }
+    layer.innerHTML = "";
+
+    // 今表示されている内容の実際の高さに合わせる（SPAの画面ごとに高さが違うため）
+    const activeScreen = document.querySelector(".screen.is-active");
+    const height = Math.max(
+      activeScreen ? activeScreen.scrollHeight : 0,
+      document.body.scrollHeight,
+      window.innerHeight
+    );
+    layer.style.height = height + "px";
+
+    // コンテンツの半幅の目安（index.htmlは480px幅、types.htmlは720px幅で中央寄せされているため）
+    const contentHalf = document.body.classList.contains("list-page-body") ? 360 : 240;
+
+    const codes = Object.keys(TYPES);
+    const pick = () => codes[Math.floor(Math.random() * codes.length)];
+
+    ["left", "right"].forEach((side) => {
+      const n = Math.max(5, Math.round(height / 280));
+      for (let i = 0; i < n; i++) {
+        const size = 60 + Math.random() * 46;               // 前回より大きめ
+        const top = (height / n) * i + Math.random() * 60;
+        const bandOffset = Math.random() * 90;               // 余白の中で内寄り〜外寄りにばらつかせる（左右の散らばり）
+        const edge = `calc(50% + ${contentHalf + 24 + bandOffset}px)`;
+        const rot = (Math.random() * 20 - 10).toFixed(1);
+        const dur = (3.2 + Math.random() * 2.2).toFixed(2);  // 動きにも幅を持たせる
+        const delay = (Math.random() * 3).toFixed(2);
+        const el = document.createElement("div");
+        el.className = "scatter-char";
+        el.style.top = top + "px";
+        el.style.width = size + "px";
+        el.style.opacity = ".85";
+        el.style.setProperty("--sf-r", rot + "deg");
+        el.style.setProperty("--sf-d", dur + "s");
+        el.style.animationDelay = delay + "s";
+        if (side === "left") el.style.right = edge;
+        else el.style.left = edge;
+        el.innerHTML = characterSVG(pick(), "char", true);
+        layer.appendChild(el);
+      }
+    });
+  } catch (err) {
+    // 装飾のための機能なので、失敗しても他の動作を止めない
+    console.error("scatter render error", err);
+  }
 }
 renderScatterChars();
 
-let scatterResizeTimer = null;
-window.addEventListener("resize", () => {
-  clearTimeout(scatterResizeTimer);
-  scatterResizeTimer = setTimeout(renderScatterChars, 200);
-});
+let scatterUpdateTimer = null;
+function scheduleScatterUpdate() {
+  clearTimeout(scatterUpdateTimer);
+  scatterUpdateTimer = setTimeout(renderScatterChars, 200);
+}
+window.addEventListener("resize", scheduleScatterUpdate);
 
 /* =========================================================
    スクロール追従ヘッダー
@@ -399,6 +435,16 @@ if (linkAboutFromResult) {
     requestAnimationFrame(() => {
       document.getElementById("about")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+  });
+}
+
+/* スタート画面本体から「診断の仕組み」を押したとき：
+   ページ内を滑らかにスクロール（同じページの中を移動している感覚が伝わるように） */
+const linkAboutFromHero = document.getElementById("link-about-from-hero");
+if (linkAboutFromHero) {
+  linkAboutFromHero.addEventListener("click", (e) => {
+    e.preventDefault();
+    document.getElementById("about")?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
 
