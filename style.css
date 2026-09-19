@@ -32,8 +32,6 @@ body {
 }
 
 .app {
-  max-width: 480px;
-  margin: 0 auto;
   min-height: 100dvh;
   position: relative;
 }
@@ -42,8 +40,15 @@ body {
 .screen {
   display: none;
   min-height: 100dvh;
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto;
   padding: max(20px, env(safe-area-inset-top)) 20px max(28px, env(safe-area-inset-bottom));
   flex-direction: column;
+}
+/* スタート画面だけ、タブレット/PC幅で横に広げる（質問・結果画面は現行幅を維持） */
+@media (min-width: 768px) {
+  #screen-start { max-width: 1200px; }
 }
 .screen.is-active { display: flex; animation: screenIn .45s ease both; }
 
@@ -95,7 +100,9 @@ body {
    スタート画面
    ========================================================= */
 .hero {
-  margin: auto 0;
+  margin: auto;
+  max-width: 480px;
+  width: 100%;
   text-align: center;
   padding: 24px 0;
 }
@@ -1895,7 +1902,7 @@ body {
    横に余白ができた分だけ、左右にキャラクターを添えて埋める */
 #about-outer { position: relative; }
 .about-side-chars { display: none; }
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .about-inner { max-width: 480px; margin: 0 auto; }
   .about-side-chars {
     display: block;
