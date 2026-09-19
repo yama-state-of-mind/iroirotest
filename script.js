@@ -322,6 +322,37 @@ renderAboutSection();
   });
 })();
 
+/* =========================================================
+   スクロール連動アニメーション
+   見出し・カード・マトリクスの4エリアが、画面に入ったタイミングでふわっと現れる
+   ========================================================= */
+(function initScrollReveal() {
+  document.querySelectorAll(".about-lead, .legend, .matrix").forEach((el) => el.classList.add("reveal"));
+  document.querySelectorAll(".mx-cell").forEach((el, i) => {
+    el.classList.add("reveal-pop");
+    el.style.setProperty("--reveal-d", (i * 0.08).toFixed(2) + "s");
+  });
+
+  const targets = document.querySelectorAll(".reveal, .reveal-pop");
+  if (!targets.length) return;
+
+  const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReduced || typeof IntersectionObserver === "undefined") {
+    targets.forEach((el) => el.classList.add("in-view"));
+    return;
+  }
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("in-view");
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" });
+  targets.forEach((el) => io.observe(el));
+})();
+
 /* 結果画面から「診断の仕組み」を押したとき：
    aboutセクションはスタート画面の中にあるので、まずスタート画面に戻ってからスクロールする */
 const linkAboutFromResult = document.getElementById("link-about-from-result");
