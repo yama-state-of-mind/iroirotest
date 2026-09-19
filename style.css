@@ -774,24 +774,26 @@ body {
 /* トースト */
 /* =========================================================
    スクロール連動アニメーション（Intersection Observerで発火）
+   ※ 既存の結果画面の登場演出が「.reveal」という名前をすでに使っていたため、
+     名前がぶつからないよう、ここだけ「.sr-reveal」（scroll reveal）にしている
    ========================================================= */
-.reveal {
+.sr-reveal {
   opacity: 0;
   transform: translateY(18px);
   transition: opacity .55s ease, transform .55s ease;
 }
-.reveal.in-view { opacity: 1; transform: none; }
+.sr-reveal.in-view { opacity: 1; transform: none; }
 
-.reveal-pop {
+.sr-reveal-pop {
   opacity: 0;
   transform: scale(.9) translateY(10px);
   transition: opacity .45s ease, transform .45s cubic-bezier(.2, .7, .3, 1);
   transition-delay: var(--reveal-d, 0s);
 }
-.reveal-pop.in-view { opacity: 1; transform: none; }
+.sr-reveal-pop.in-view { opacity: 1; transform: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .reveal, .reveal-pop { transition: none; }
+  .sr-reveal, .sr-reveal-pop { transition: none; }
 }
 /* =========================================================
    スクロール追従ヘッダー（トップページ・16タイプ詳細ページ用）
@@ -1990,7 +1992,7 @@ body {
   left: 0;
   width: 100%;
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
 }
 .scatter-char {
   position: absolute;

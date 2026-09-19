@@ -399,13 +399,13 @@ window.addEventListener("resize", scheduleScatterUpdate);
    見出し・カード・マトリクスの4エリアが、画面に入ったタイミングでふわっと現れる
    ========================================================= */
 (function initScrollReveal() {
-  document.querySelectorAll(".about-lead, .legend, .matrix").forEach((el) => el.classList.add("reveal"));
+  document.querySelectorAll(".about-lead, .legend, .matrix").forEach((el) => el.classList.add("sr-reveal"));
   document.querySelectorAll(".mx-cell").forEach((el, i) => {
-    el.classList.add("reveal-pop");
+    el.classList.add("sr-reveal-pop");
     el.style.setProperty("--reveal-d", (i * 0.08).toFixed(2) + "s");
   });
 
-  const targets = document.querySelectorAll(".reveal, .reveal-pop");
+  const targets = document.querySelectorAll(".sr-reveal, .sr-reveal-pop");
   if (!targets.length) return;
 
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
