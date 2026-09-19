@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>16タイプの詳細｜登山タイプ診断</title>
+<meta name="description" content="登山タイプ診断の16タイプを、山の生き物のキャラクターと一緒に紹介します。">
+<meta name="theme-color" content="#1E3A31">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-V6124DLH2P"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag("js", new Date());
+  gtag("config", "G-V6124DLH2P");
+</script>
+</head>
+<body>
+
+<div class="list-page">
+
+  <header class="list-head">
+    <h1>16タイプの詳細</h1>
+    <p class="list-en"><b>16</b> TYPES OF HIKERS</p>
+    <p>生息エリアを選んで、4タイプずつ見られます。</p>
+  </header>
+
+  <!-- ========== 入口：仕組みの解説 ========== -->
+  <!-- ========== 生息エリア別の詳細 ========== -->
+  <div id="detail">
+    <nav class="group-tabs" id="group-tabs" aria-label="生息エリアの切り替え"></nav>
+    <div id="group-body"></div>
+  </div>
+
+  <p class="list-foot hero-link">
+    <a href="index.html#about">診断の仕組み</a>
+    <a href="index.html">診断をはじめる</a>
+  </p>
+
+</div>
+
+<script src="data.js"></script>
+<script src="characters.js"></script>
+<script>
+/* =========================================================
+   16タイプ一覧
+   入口では仕組みの解説だけを見せ、生息エリアを選ぶと詳細に切り替わる。
+   URLは ?g=PS で生息エリア指定、#PSLC でタイプ指定に対応。
+   ========================================================= */
+const ORDER = ["PS", "PG", "ES", "EG"];
+const codesOf = (key) => Object.keys(TYPES).filter((c) => c.slice(0, 2) === key);
+
+/* ---------- 生息エリア切り替えタブ ---------- */
+document.getElementById("group-tabs").innerHTML = ORDER.map((key) => {
+  const g = GROUPS[key];
+  return `<button class="gtab" data-g="${key}">
+    ${areaIcon(key)}
+    <span class="gtab-name">${g.name}</span>
+  </button>`;
+}).join("");
+
+/* ---------- 相性のいいタイプ（結果画面と同じルール） ---------- */
+function flipAxis(code, axisIndex) {
+  const ax = AXES[axisIndex];
+  const chars = code.split("");
+  chars[axisIndex] = chars[axisIndex] === ax.a ? ax.b : ax.a;
+  return chars.join("");
+}
+function findMatches(code, secret) {
+  const w = (typeof MATCH_WHY !== "undefined" && MATCH_WHY[code]) || {};
+  const list = [
+    { label: "補い合える相手",     code: flipAxis(code, 2), why: w.calm || "" },
+    { label: "歩き方が似ている相手", code: flipAxis(code, 0), why: w.spark || "" },
+  ];
+  if (secret) {
+    list.push({
+      label: "相性は文句なし",
+      code: code,
+      why: typeof SECRET_MATCH_WHY !== "undefined" ? SECRET_MATCH_WHY : "",
+    });
+  } else {
+    list.push({
+      label: "刺激をくれる相手",
+      code: flipAxis(flipAxis(code, 0), 1),
+      why: w.opp || "",
+    });
+  }
+  return list;
+}
+
+/* ---------- タイプ1件のカード ---------- */
+/* シークレットに対応するタイプかどうか */
+function secretOf(code) {
+  return (typeof SECRETS !== "undefined" && SECRETS.find((s) => s.code === code)) || null;
+}
+
+function typeCard(code, asSecret) {
+  const sec = asSecret ? secretOf(code) : null;
+  const mts = (sec
+    ? (typeof SECRET_MOUNTAINS !== "undefined" ? SECRET_MOUNTAINS[sec.id] : null)
+    : (typeof MOUNTAINS !== "undefined" ? MOUNTAINS[code] : null)) || [];
+  const t = TYPES[code];
+  const c = sec
+    ? { animal: sec.animal, item: SECRET_CHARACTERS[sec.id].item }
+    : (CHARACTERS[code] || { animal: "", item: "" });
+  const g = groupOf(code);
+
+  const axisText = code.split("").map((ch, i) => {
+    const ax = AXES[i];
+    return `<span class="ax"><b>${ch}</b>${ch === ax.a ? ax.aName : ax.bName}</span>`;
+  }).join("");
+
+  const matches = findMatches(code, sec).map((m) => {
+    const mt = TYPES[m.code], mc = CHARACTERS[m.code];
+    if (!mt) return "";
+    return `
+      <a class="match" href="#${m.code}" style="background:${groupOf(m.code).band}">
+        <span class="match-label">${m.label}</span>
+        ${characterSVG(m.code, "char char-sm")}
+        <span class="match-code" style="background:${groupOf(m.code).deep}">${m.code}</span>
+        <span class="match-name">${mc ? mc.animal : mt.name}</span>
+        <span class="match-type">${mt.name}</span>
+        <span class="match-why">${m.why}</span>
+      </a>`;
+  }).join("");
+
+  return `
+    <article class="type-item${sec ? " is-secret" : ""}" id="${code}"
+             ${secretOf(code) ? 'data-secret="1"' : ""}>
+      <header class="ti-head">
+        <div class="ti-char-wrap">
+          ${sec ? secretSVG(sec.id, "char ti-char") : characterSVG(code, "char ti-char")}
+        </div>
+        <div class="ti-title">
+          <h3 class="ti-name">${c.animal}</h3>
+          <p class="tc-type">${sec ? sec.typeName : t.name}</p>
+          <p class="tc-copy">「${sec ? sec.copy : t.copy}」</p>
+        </div>
+      </header>
+      <p class="ti-id">
+        <span class="tc-code" style="background:${sec ? "#A5761F" : g.deep}">${code}${sec ? '<em>SECRET</em>' : ""}</span>
+        <span class="tc-area" style="color:${g.deep}">生息エリア：${g.name}</span>
+      </p>
+
+      <div class="ti-axes">${axisText}<span class="ax ax-item"><b>持ちもの</b>${c.item}</span></div>
+
+      <section class="ti-block">
+        <h4 class="ti-label">特徴</h4>
+        <p class="ti-text">${sec ? sec.features : t.features}</p>
+      </section>
+
+      <section class="ti-block ti-caution">
+        <h4 class="ti-label">気をつけたいこと</h4>
+        <p class="ti-text">${sec ? sec.caution : t.caution}</p>
+      </section>
+
+      <section class="ti-block">
+        <h4 class="ti-label">おすすめの山</h4>
+        <div class="mt-row">
+          ${mts.map((m) => `
+            <div class="mt">
+              <p class="mt-name">${m.name}${m.note ? '<span class="mt-flag">要注意</span>' : ""}</p>
+              ${m.pref ? `<p class="mt-pref">（${m.pref}）</p>` : ""}
+              <p class="mt-why">${m.why}</p>
+            </div>`).join("")}
+        </div>
+        ${mts.some((m) => m.note) ? `<p class="mt-note">${MOUNTAIN_NOTE}</p>` : ""}
+      </section>
+
+      <section class="ti-block">
+        <h4 class="ti-label">一緒に登ると面白い相手</h4>
+        <div class="match-row">${matches}</div>
+      </section>
+
+    </article>`;
+}
+
+/* ---------- 追従タブの高さを測って記録する ----------
+   アンカーで移動したときに、カードがタブの下に隠れないようにするため */
+function measureTabs() {
+  const tabs = document.getElementById("group-tabs");
+  if (!tabs) return;
+  const h = Math.round(tabs.getBoundingClientRect().height);
+  if (h) document.documentElement.style.setProperty("--tab-h", h + "px");
+}
+window.addEventListener("resize", measureTabs);
+
+/* ---------- 表示の切り替え ---------- */
+function showGroup(key, anchor) {
+  const g = GROUPS[key] ? GROUPS[key] : GROUPS.PS;
+  key = GROUPS[key] ? key : "PS";
+
+  document.querySelectorAll(".gtab").forEach((b) => {
+    const on = b.dataset.g === key;
+    b.classList.toggle("on", on);
+    b.style.background = on ? GROUPS[b.dataset.g].band : "";
+    b.style.color = on ? GROUPS[b.dataset.g].deep : "";
+  });
+
+  document.getElementById("group-body").innerHTML = `
+    <div class="group-hero" style="background:${g.band}">
+      <span class="gh-bg" style="color:${g.deep}">${g.name}</span>
+      <p class="gh-name" style="color:${g.deep}">${g.name}</p>
+      <p class="gh-lead">${g.lead}</p>
+      <p class="gh-axis">${g.axis}　${key}＊＊</p>
+    </div>
+    ${codesOf(key).map((c) => typeCard(c)).join("")}`;
+
+  measureTabs();
+  const target = anchor && document.getElementById(anchor);
+  if (target) {
+    // レイアウトが確定してから移動する
+    requestAnimationFrame(() => {
+      measureTabs();
+      target.scrollIntoView({ block: "start" });
+    });
+  } else {
+    window.scrollTo({ top: 0 });
+  }
+}
+
+/* ---------- URLから初期表示を決める ----------
+   ?g=PS があればその生息エリア。なければ #PSLC のアンカーから逆引きする */
+function routeFromURL() {
+  const q = new URLSearchParams(location.search).get("g");
+  const hash = (location.hash || "").slice(1);
+
+  if (q && GROUPS[q]) return showGroup(q, TYPES[hash] ? hash : null);
+  if (hash && TYPES[hash]) return showGroup(hash.slice(0, 2), hash);
+  if (hash && GROUPS[hash]) return showGroup(hash, null);
+  showGroup("PS");   // 指定がなければ孤峰から
+}
+
+/* ---------- 操作 ---------- */
+document.getElementById("group-tabs").addEventListener("click", (e) => {
+  const tab = e.target.closest(".gtab");
+  if (!tab) return;
+  history.pushState(null, "", `?g=${tab.dataset.g}`);
+  showGroup(tab.dataset.g);
+});
+
+/* 詳細内の相性リンクは、別生息エリアなら切り替えてから移動する */
+document.getElementById("group-body").addEventListener("click", (e) => {
+  const link = e.target.closest(".match");
+  if (!link) return;
+  const code = link.getAttribute("href").slice(1);
+  if (!TYPES[code]) return;
+  e.preventDefault();
+  history.pushState(null, "", `?g=${code.slice(0, 2)}#${code}`);
+  showGroup(code.slice(0, 2), code);
+});
+
+/* ---------- キャラクターを2秒以内に2回押すと、同じタイプの隠れた姿にかわる ----------
+   タップの記録はカード自身に持たせる（差し替え時に自然にリセットされる） */
+document.getElementById("group-body").addEventListener("click", (e) => {
+  const wrap = e.target.closest(".ti-char-wrap");
+  if (!wrap) return;
+  const card = wrap.closest(".type-item");
+  if (!card || !card.dataset.secret) return;
+
+  const now = Date.now();
+  const taps = (card.dataset.taps || "")
+    .split(",")
+    .filter(Boolean)
+    .map(Number)
+    .filter((t) => now - t < 2000);
+  taps.push(now);
+
+  if (taps.length < 2) {
+    card.dataset.taps = taps.join(",");
+    return;
+  }
+  card.replaceWith(
+    document.createRange().createContextualFragment(
+      typeCard(card.id, !card.classList.contains("is-secret"))
+    )
+  );
+});
+
+window.addEventListener("popstate", routeFromURL);
+routeFromURL();
+</script>
+</body>
+</html>
