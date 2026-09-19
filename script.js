@@ -352,7 +352,10 @@ renderHeroFootprintDivider();
 
 /* =========================================================
    余白の足跡散らし（ページ全体・全画面共通）
-   動物本体ではなく足跡だけを、中央のコンテンツを避けつつ余白全体にランダム配置する。
+   グリッドベース配置：120px四方のマス目に区切り、1マスにつき最大1個までとして
+   重なりを防ぐ。さらに全マスの20〜30%だけを間引いて選び、
+   選ばれたマスの中心から数pxランダムにズラして（ジッター）配置する。
+   動物本体ではなく足跡だけを、中央のコンテンツを避けつつ配置する。
    全部try/catchで守り、万が一失敗しても他の機能に影響しないようにしてある。
    ========================================================= */
 function renderScatterChars() {
@@ -385,18 +388,37 @@ function renderScatterChars() {
     const viewportHalf = window.innerWidth / 2;
 
     const keys = Object.keys(FOOTPRINTS);
-    // 密度は控えめに（以前の約1/4）。中央のコンテンツを邪魔しない、余白を感じる配置にする
-    const count = Math.max(6, Math.round((height / 260) * (window.innerWidth / 1400) * 24 * 0.27));
+    const CELL = 120;          // マス目のサイズ(px)
+    const FILL_RATIO = 0.25;   // 全マスのうち配置するマスの割合（20〜30%の中央値）
+    const JITTER = CELL * 0.28; // マス中心からのズレの最大量(px)
 
-    for (let i = 0; i < count; i++) {
-      // 中央のコンテンツ帯を避けつつ、余白全体（帯ではなく面）にランダムに配置する
-      let x;
-      do {
-        x = Math.random() * window.innerWidth;
-      } while (Math.abs(x - viewportHalf) < contentHalf + 20);
+    const cols = Math.ceil(window.innerWidth / CELL);
+    const rows = Math.ceil(height / CELL);
 
-      const y = Math.random() * height;
-      const size = 14 + Math.random() * 14;   // 前回より小さめ
+    // まず、中央のコンテンツ帯にかからないマスだけを候補として集める
+    const candidates = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cx = c * CELL + CELL / 2;
+        const cy = r * CELL + CELL / 2;
+        if (Math.abs(cx - viewportHalf) < contentHalf + 20) continue;
+        candidates.push({ cx, cy });
+      }
+    }
+
+    // 候補マスをシャッフルしてから、全体の20〜30%だけを間引いて選ぶ
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+    const pickCount = Math.round(candidates.length * FILL_RATIO);
+    const chosen = candidates.slice(0, pickCount);
+
+    chosen.forEach(({ cx, cy }) => {
+      // マスの中心から、数pxだけランダムにズラす（ジッター効果）
+      const x = cx + (Math.random() * 2 - 1) * JITTER;
+      const y = cy + (Math.random() * 2 - 1) * JITTER;
+      const size = 14 + Math.random() * 14;
       const key = keys[Math.floor(Math.random() * keys.length)];
       const rot = Math.round(Math.random() * 360);
 
@@ -408,7 +430,7 @@ function renderScatterChars() {
       el.style.transform = `rotate(${rot}deg)`;
       el.innerHTML = FOOTPRINTS[key];
       layer.appendChild(el);
-    }
+    });
   } catch (err) {
     // 装飾のための機能なので、失敗しても他の動作を止めない
     console.error("scatter render error", err);

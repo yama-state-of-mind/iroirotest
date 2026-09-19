@@ -48,8 +48,8 @@
   </div>
 
   <p class="list-foot hero-link">
-    <a href="index.html#about">診断の仕組み</a>
     <a href="index.html">診断をはじめる</a>
+    <a href="index.html#about">診断の仕組み</a>
   </p>
 
 </div>
@@ -347,7 +347,9 @@ const FOOTPRINTS = {
   </svg>`,
 };
 
-/* 余白の足跡散らし（トップページと同じ考え方。このページは幅720pxのため半幅を360で計算） */
+/* 余白の足跡散らし（トップページと同じ考え方。このページは幅720pxのため半幅を360で計算）
+   グリッドベース配置：120px四方のマス目に区切り、1マスにつき最大1個までとして重なりを防ぐ。
+   全マスの20〜30%だけを間引いて選び、マス中心から数pxランダムにズラして（ジッター）配置する */
 function renderScatterChars() {
   try {
     if (window.innerWidth < 768) {
@@ -368,16 +370,32 @@ function renderScatterChars() {
     const viewportHalf = window.innerWidth / 2;
 
     const keys = Object.keys(FOOTPRINTS);
-    // 密度は控えめに（以前の約1/4）。中央のコンテンツを邪魔しない、余白を感じる配置にする
-    const count = Math.max(6, Math.round((height / 260) * (window.innerWidth / 1400) * 24 * 0.27));
+    const CELL = 120;
+    const FILL_RATIO = 0.25;
+    const JITTER = CELL * 0.28;
 
-    for (let i = 0; i < count; i++) {
-      let x;
-      do {
-        x = Math.random() * window.innerWidth;
-      } while (Math.abs(x - viewportHalf) < contentHalf + 20);
+    const cols = Math.ceil(window.innerWidth / CELL);
+    const rows = Math.ceil(height / CELL);
 
-      const y = Math.random() * height;
+    const candidates = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cx = c * CELL + CELL / 2;
+        const cy = r * CELL + CELL / 2;
+        if (Math.abs(cx - viewportHalf) < contentHalf + 20) continue;
+        candidates.push({ cx, cy });
+      }
+    }
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+    const pickCount = Math.round(candidates.length * FILL_RATIO);
+    const chosen = candidates.slice(0, pickCount);
+
+    chosen.forEach(({ cx, cy }) => {
+      const x = cx + (Math.random() * 2 - 1) * JITTER;
+      const y = cy + (Math.random() * 2 - 1) * JITTER;
       const size = 14 + Math.random() * 14;
       const key = keys[Math.floor(Math.random() * keys.length)];
       const rot = Math.round(Math.random() * 360);
@@ -390,7 +408,7 @@ function renderScatterChars() {
       el.style.transform = `rotate(${rot}deg)`;
       el.innerHTML = FOOTPRINTS[key];
       layer.appendChild(el);
-    }
+    });
   } catch (err) {
     console.error("scatter render error", err);
   }
