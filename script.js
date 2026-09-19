@@ -271,8 +271,78 @@ function renderAboutSection() {
 renderAboutSection();
 
 /* =========================================================
-   余白のキャラクター散らし（ページ全体・全画面共通）
-   コンテンツ幅の外側（左右の余白）に、ページの高さいっぱいに散らす。
+   足跡アセット（サイト全体で共通）
+   肉球・鳥・ひづめ・翼（コウモリ）の4種類。すべてcurrentColorで塗るので、
+   使う場所のCSSのcolorだけで色を変えられる
+   ========================================================= */
+const FOOTPRINTS = {
+  paw: `<svg viewBox="0 0 100 100">
+    <ellipse cx="50" cy="66" rx="24" ry="20" fill="currentColor"/>
+    <ellipse cx="24" cy="34" rx="10" ry="13" fill="currentColor" transform="rotate(-18 24 34)"/>
+    <ellipse cx="42" cy="20" rx="10" ry="13" fill="currentColor" transform="rotate(-6 42 20)"/>
+    <ellipse cx="60" cy="20" rx="10" ry="13" fill="currentColor" transform="rotate(6 60 20)"/>
+    <ellipse cx="78" cy="34" rx="10" ry="13" fill="currentColor" transform="rotate(18 78 34)"/>
+  </svg>`,
+  bird: `<svg viewBox="0 0 100 100">
+    <path d="M50 92 L50 46" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
+    <path d="M50 46 L20 12" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
+    <path d="M50 46 L50 6"  stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
+    <path d="M50 46 L80 12" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
+    <path d="M50 92 L38 78" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+  </svg>`,
+  hoof: `<svg viewBox="0 0 100 100">
+    <path d="M48 12 C34 12 26 28 28 48 C30 66 38 82 48 86 C50 74 50 24 48 12 Z" fill="currentColor" transform="translate(-3 0)"/>
+    <path d="M52 12 C66 12 74 28 72 48 C70 66 62 82 52 86 C50 74 50 24 52 12 Z" fill="currentColor" transform="translate(3 0)"/>
+  </svg>`,
+  wing: `<svg viewBox="0 0 100 100">
+    <path d="M50 70 C34 66 20 54 14 34 C24 40 32 42 40 40 C34 30 30 20 30 10
+             C40 18 46 28 48 38 C48 26 50 14 54 6 C58 16 58 28 56 38
+             C62 26 68 18 76 12 C74 22 68 32 60 40 C68 40 76 36 84 28
+             C80 46 68 58 54 64 Z" fill="currentColor"/>
+    <ellipse cx="50" cy="78" rx="10" ry="8" fill="currentColor"/>
+  </svg>`,
+};
+
+// 診断タイプ・シークレット → 足跡の種類
+const TYPE_FOOTPRINT = {
+  PSLC: "hoof", PSLA: "bird", PSFC: "paw", PSFA: "paw",
+  PGLC: "bird", PGLA: "bird", PGFC: "bird", PGFA: "paw",
+  ESLC: "paw",  ESLA: "paw",  ESFC: "paw",  ESFA: "paw",
+  EGLC: "hoof", EGLA: "bird", EGFC: "paw",  EGFA: "paw",
+};
+const SECRET_FOOTPRINT = { bat: "wing", ptarmigan: "bird" };
+
+function footprintInner(key) {
+  return (FOOTPRINTS[key] || FOOTPRINTS.paw).trim().replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, "");
+}
+
+/* 歩行風の区切り線：同じ向き・一方向に進みつつ、左右の足が交互に着地しているような
+   控えめな縦のずれを付ける */
+function trailDividerSVG(footKey, count = 11) {
+  const w = 340, h = 30, size = 17, offset = 4;
+  const step = w / (count + 1);
+  const inner = footprintInner(footKey);
+  const items = Array.from({ length: count }, (_, i) => {
+    const x = step * (i + 1);
+    const y = h / 2 + (i % 2 === 0 ? -offset : offset);
+    return `<g transform="translate(${x - size / 2} ${y - size / 2}) rotate(-90 ${size / 2} ${size / 2}) scale(${size / 100})" opacity=".8">${inner}</g>`;
+  }).join("");
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">${items}</svg>`;
+}
+
+/* トップページの区切り：足跡の種類はランダム（毎回変わる） */
+function renderHeroFootprintDivider() {
+  const box = document.getElementById("hero-footprint-divider");
+  if (!box) return;
+  const keys = Object.keys(FOOTPRINTS);
+  const key = keys[Math.floor(Math.random() * keys.length)];
+  box.innerHTML = trailDividerSVG(key);
+}
+renderHeroFootprintDivider();
+
+/* =========================================================
+   余白の足跡散らし（ページ全体・全画面共通）
+   動物本体ではなく足跡だけを、中央のコンテンツを避けつつ余白全体にランダム配置する。
    全部try/catchで守り、万が一失敗しても他の機能に影響しないようにしてある。
    ========================================================= */
 function renderScatterChars() {
@@ -302,34 +372,32 @@ function renderScatterChars() {
 
     // コンテンツの半幅の目安（index.htmlは480px幅、types.htmlは720px幅で中央寄せされているため）
     const contentHalf = document.body.classList.contains("list-page-body") ? 360 : 240;
+    const viewportHalf = window.innerWidth / 2;
 
-    const codes = Object.keys(TYPES);
-    const pick = () => codes[Math.floor(Math.random() * codes.length)];
+    const keys = Object.keys(FOOTPRINTS);
+    const count = Math.max(24, Math.round((height / 260) * (window.innerWidth / 1400) * 24));
 
-    ["left", "right"].forEach((side) => {
-      const n = Math.max(5, Math.round(height / 280));
-      for (let i = 0; i < n; i++) {
-        const size = 60 + Math.random() * 46;               // 前回より大きめ
-        const top = (height / n) * i + Math.random() * 60;
-        const bandOffset = Math.random() * 90;               // 余白の中で内寄り〜外寄りにばらつかせる（左右の散らばり）
-        const edge = `calc(50% + ${contentHalf + 24 + bandOffset}px)`;
-        const rot = (Math.random() * 20 - 10).toFixed(1);
-        const dur = (3.2 + Math.random() * 2.2).toFixed(2);  // 動きにも幅を持たせる
-        const delay = (Math.random() * 3).toFixed(2);
-        const el = document.createElement("div");
-        el.className = "scatter-char";
-        el.style.top = top + "px";
-        el.style.width = size + "px";
-        el.style.opacity = ".85";
-        el.style.setProperty("--sf-r", rot + "deg");
-        el.style.setProperty("--sf-d", dur + "s");
-        el.style.animationDelay = delay + "s";
-        if (side === "left") el.style.right = edge;
-        else el.style.left = edge;
-        el.innerHTML = characterSVG(pick(), "char", true);
-        layer.appendChild(el);
-      }
-    });
+    for (let i = 0; i < count; i++) {
+      // 中央のコンテンツ帯を避けつつ、余白全体（帯ではなく面）にランダムに配置する
+      let x;
+      do {
+        x = Math.random() * window.innerWidth;
+      } while (Math.abs(x - viewportHalf) < contentHalf + 20);
+
+      const y = Math.random() * height;
+      const size = 14 + Math.random() * 14;   // 前回より小さめ
+      const key = keys[Math.floor(Math.random() * keys.length)];
+      const rot = Math.round(Math.random() * 360);
+
+      const el = document.createElement("div");
+      el.className = "scatter-print";
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+      el.style.width = size + "px";
+      el.style.transform = `rotate(${rot}deg)`;
+      el.innerHTML = FOOTPRINTS[key];
+      layer.appendChild(el);
+    }
   } catch (err) {
     // 装飾のための機能なので、失敗しても他の動作を止めない
     console.error("scatter render error", err);
@@ -749,6 +817,13 @@ function showResult() {
   grp.style.color = g.deep;
   const ch = CHARACTERS[code];
   const secret = findSecret(code);
+
+  // 結果の区切り線は、診断結果の動物の足跡で固定（シークレットならシークレット側の種類）
+  const resultDivider = document.getElementById("result-footprint-divider");
+  if (resultDivider) {
+    const footKey = secret ? (SECRET_FOOTPRINT[secret.id] || "paw") : (TYPE_FOOTPRINT[code] || "paw");
+    resultDivider.innerHTML = trailDividerSVG(footKey);
+  }
 
   $("#result-char").innerHTML = secret
     ? secretSVG(secret.id, "char char-lg")

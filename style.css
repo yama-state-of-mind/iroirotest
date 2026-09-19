@@ -802,9 +802,6 @@ body {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 10px 16px;
   padding-top: max(10px, env(safe-area-inset-top));
   background: rgba(243, 246, 244, .92);
@@ -814,9 +811,14 @@ body {
   transition: transform .28s ease;
 }
 .scroll-header.show { transform: translateY(0); }
+.scroll-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 .sh-logo {
-  position: absolute;
-  left: 16px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -934,14 +936,18 @@ body {
   flex-wrap: nowrap;
   gap: 10px;
 }
-.hero-divider {
-  margin: 22px auto 0;
-  width: 100%;
-  max-width: 220px;
-  border: none;
-  border-top: 1px solid var(--line);
-}
 .result .hero-link { margin-top: 20px; }
+
+/* 足跡の区切り線（歩行風：一方向・左右交互のわずかなずれ） */
+.footprint-divider {
+  margin: 20px auto;
+  width: 100%;
+  max-width: 260px;
+  color: var(--stone);
+  opacity: .6;
+}
+.footprint-divider svg { display: block; width: 100%; height: auto; }
+
 .hero-link a {
   display: inline-block;
   font-size: 12.5px;
@@ -1983,8 +1989,9 @@ body {
 #about-matrix-wrap { margin-top: 8px; }
 
 /* =========================================================
-   余白のキャラクター散らし（ページ全体・全画面共通）
-   body直下の全高レイヤーに、JSで動的に配置する
+   余白の足跡散らし（ページ全体・全画面共通）
+   body直下の全高レイヤーに、JSで動的に配置する。動物本体ではなく足跡そのものなので、
+   地面の跡らしく静止させたまま、薄い色で軽く敷いておく
    ========================================================= */
 #scatter-layer {
   position: absolute;
@@ -1994,17 +2001,12 @@ body {
   pointer-events: none;
   z-index: -1;
 }
-.scatter-char {
+.scatter-print {
   position: absolute;
-  animation: scatterFloat var(--sf-d, 4.2s) ease-in-out infinite;
+  color: var(--stone);
+  opacity: .3;
 }
-@keyframes scatterFloat {
-  0%, 100% { transform: translateY(0) rotate(var(--sf-r, 0deg)); }
-  50%      { transform: translateY(-10px) rotate(var(--sf-r, 0deg)); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .scatter-char { animation: none; }
-}
+.scatter-print svg { display: block; width: 100%; height: auto; }
 
 /* マトリクスのキャラクターにふわふわ浮く動きを付ける（山クラスターと同じ言葉づかい） */
 .mx-char {

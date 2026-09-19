@@ -61,11 +61,11 @@
       </p>
       <button class="btn btn-primary" id="btn-start">診断をはじめる（約2分）</button>
       <p class="hero-note">全<span id="note-count">14</span>問・SNSでシェアできます</p>
-      <hr class="hero-divider">
       <p class="hero-link" id="hero-nav-links">
         <a href="#about" id="link-about-from-hero">診断の仕組み</a>
         <a href="types.html?g=PS">16タイプの詳細</a>
       </p>
+      <div class="footprint-divider" id="hero-footprint-divider"></div>
     </div>
 
     <section id="about" class="about-section">
@@ -276,6 +276,8 @@
         <div id="result-axes"><!-- 4軸バー --></div>
       </div>
 
+      <div class="footprint-divider" id="result-footprint-divider"></div>
+
       <section class="panel">
         <h3 class="panel-title">このタイプにおすすめの山</h3>
         <div class="mt-row" id="result-mountains"><!-- おすすめ3座 --></div>
@@ -303,11 +305,13 @@
 
 <!-- ========== スクロール追従ヘッダー（.screenのtransform対策で.appの外に置く） ========== -->
 <header class="scroll-header" id="scroll-header">
-  <a href="#" class="sh-logo" id="sh-logo">
-    <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 6 L34 32 L6 32 Z" fill="#1E3A31"/><path d="M20 6 L25 16 L15 16 Z" fill="#E0A33B"/></svg>
-    登山タイプ診断
-  </a>
-  <button class="sh-cta" id="sh-cta">診断をはじめる</button>
+  <div class="scroll-header-inner">
+    <a href="#" class="sh-logo" id="sh-logo">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 6 L34 32 L6 32 Z" fill="#1E3A31"/><path d="M20 6 L25 16 L15 16 Z" fill="#E0A33B"/></svg>
+      登山タイプ診断
+    </a>
+    <button class="sh-cta" id="sh-cta">診断をはじめる</button>
+  </div>
 </header>
 
 <!-- ========== シェア用モーダル（.screenのtransform対策で.appの外に置く） ========== -->
