@@ -317,9 +317,14 @@ function footprintInner(key) {
 }
 
 /* 歩行風の区切り線：同じ向き・一方向に進みつつ、左右の足が交互に着地しているような
-   控えめな縦のずれを付ける */
-function trailDividerSVG(footKey, count = 11) {
-  const w = 340, h = 30, size = 17, offset = 4;
+   控えめな縦のずれを付ける。
+   pxWidthには実際のコンテナ幅（px）を渡す。viewBoxをその幅に一致させることで、
+   svgをwidth:100%で表示しても足跡の大きさが伸び縮みせず、個数だけが幅に応じて増減する */
+function trailDividerSVG(footKey, pxWidth) {
+  const spacing = 34;   // 足跡1つあたりに使う横幅の目安（px）
+  const size = 17, offset = 4, h = 30;
+  const w = Math.max(pxWidth, spacing * 4);
+  const count = Math.max(4, Math.floor(w / spacing));
   const step = w / (count + 1);
   const inner = footprintInner(footKey);
   const items = Array.from({ length: count }, (_, i) => {
@@ -327,16 +332,21 @@ function trailDividerSVG(footKey, count = 11) {
     const y = h / 2 + (i % 2 === 0 ? -offset : offset);
     return `<g transform="translate(${x - size / 2} ${y - size / 2}) rotate(-90 ${size / 2} ${size / 2}) scale(${size / 100})" opacity=".8">${inner}</g>`;
   }).join("");
-  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">${items}</svg>`;
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">${items}</svg>`;
 }
 
-/* トップページの区切り：足跡の種類はランダム（毎回変わる） */
+/* トップページの区切り：足跡の種類はランダム（毎回変わる）。
+   種類は一度選んだら、リサイズ時も同じ種類を保つ */
+let heroFootprintKey = null;
+let resultFootprintKey = null;
 function renderHeroFootprintDivider() {
   const box = document.getElementById("hero-footprint-divider");
   if (!box) return;
-  const keys = Object.keys(FOOTPRINTS);
-  const key = keys[Math.floor(Math.random() * keys.length)];
-  box.innerHTML = trailDividerSVG(key);
+  if (!heroFootprintKey) {
+    const keys = Object.keys(FOOTPRINTS);
+    heroFootprintKey = keys[Math.floor(Math.random() * keys.length)];
+  }
+  box.innerHTML = trailDividerSVG(heroFootprintKey, box.clientWidth || box.getBoundingClientRect().width);
 }
 renderHeroFootprintDivider();
 
@@ -375,7 +385,8 @@ function renderScatterChars() {
     const viewportHalf = window.innerWidth / 2;
 
     const keys = Object.keys(FOOTPRINTS);
-    const count = Math.max(24, Math.round((height / 260) * (window.innerWidth / 1400) * 24));
+    // 密度は控えめに（以前の約1/4）。中央のコンテンツを邪魔しない、余白を感じる配置にする
+    const count = Math.max(6, Math.round((height / 260) * (window.innerWidth / 1400) * 24 * 0.27));
 
     for (let i = 0; i < count; i++) {
       // 中央のコンテンツ帯を避けつつ、余白全体（帯ではなく面）にランダムに配置する
@@ -408,7 +419,15 @@ renderScatterChars();
 let scatterUpdateTimer = null;
 function scheduleScatterUpdate() {
   clearTimeout(scatterUpdateTimer);
-  scatterUpdateTimer = setTimeout(renderScatterChars, 200);
+  scatterUpdateTimer = setTimeout(() => {
+    renderScatterChars();
+    // 区切り線も、幅が変わったら足跡の個数を計算し直す（種類は変えない）
+    renderHeroFootprintDivider();
+    const resultDivider = document.getElementById("result-footprint-divider");
+    if (resultDivider && resultFootprintKey) {
+      resultDivider.innerHTML = trailDividerSVG(resultFootprintKey, resultDivider.clientWidth || resultDivider.getBoundingClientRect().width);
+    }
+  }, 200);
 }
 window.addEventListener("resize", scheduleScatterUpdate);
 
@@ -821,8 +840,8 @@ function showResult() {
   // 結果の区切り線は、診断結果の動物の足跡で固定（シークレットならシークレット側の種類）
   const resultDivider = document.getElementById("result-footprint-divider");
   if (resultDivider) {
-    const footKey = secret ? (SECRET_FOOTPRINT[secret.id] || "paw") : (TYPE_FOOTPRINT[code] || "paw");
-    resultDivider.innerHTML = trailDividerSVG(footKey);
+    resultFootprintKey = secret ? (SECRET_FOOTPRINT[secret.id] || "paw") : (TYPE_FOOTPRINT[code] || "paw");
+    resultDivider.innerHTML = trailDividerSVG(resultFootprintKey, resultDivider.clientWidth || resultDivider.getBoundingClientRect().width);
   }
 
   $("#result-char").innerHTML = secret

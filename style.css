@@ -942,7 +942,7 @@ body {
 .footprint-divider {
   margin: 20px auto;
   width: 100%;
-  max-width: 260px;
+  max-width: 100%;
   color: var(--stone);
   opacity: .6;
 }
@@ -2004,7 +2004,7 @@ body {
 .scatter-print {
   position: absolute;
   color: var(--stone);
-  opacity: .3;
+  opacity: .13;
 }
 .scatter-print svg { display: block; width: 100%; height: auto; }
 

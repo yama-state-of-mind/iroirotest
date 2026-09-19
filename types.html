@@ -368,7 +368,8 @@ function renderScatterChars() {
     const viewportHalf = window.innerWidth / 2;
 
     const keys = Object.keys(FOOTPRINTS);
-    const count = Math.max(24, Math.round((height / 260) * (window.innerWidth / 1400) * 24));
+    // 密度は控えめに（以前の約1/4）。中央のコンテンツを邪魔しない、余白を感じる配置にする
+    const count = Math.max(6, Math.round((height / 260) * (window.innerWidth / 1400) * 24 * 0.27));
 
     for (let i = 0; i < count; i++) {
       let x;
