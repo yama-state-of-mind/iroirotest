@@ -262,15 +262,51 @@ function renderAboutSection() {
     const cell = e.target.closest(".mx-cell");
     if (cell) location.href = `types.html?g=${cell.dataset.g}`;
   });
-
-  // 両サイドの余白を埋めるキャラクター（PC/タブレット幅でのみ見える）
-  const decoCodes = { "about-deco-l1": "PSLC", "about-deco-l2": "ESFC", "about-deco-r1": "PGFA", "about-deco-r2": "EGLA" };
-  Object.entries(decoCodes).forEach(([id, code]) => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = characterSVG(code, "char", true);
-  });
 }
 renderAboutSection();
+
+/* 両サイドの余白を埋める、ランダムに散らしたキャラクター（PC/タブレット幅でのみ見える）。
+   about全体の高さに合わせて個体数を決め、位置・大きさ・傾き・浮く速さをランダムにする */
+function renderScatterChars() {
+  const outer = document.getElementById("about-outer");
+  if (!outer) return;
+  outer.querySelectorAll(".about-scatter").forEach((el) => el.remove());
+
+  const codes = Object.keys(TYPES);
+  const pick = () => codes[Math.floor(Math.random() * codes.length)];
+  const height = outer.offsetHeight;
+  if (!height) return;
+
+  ["left", "right"].forEach((side) => {
+    const wrap = document.createElement("div");
+    wrap.className = "about-scatter " + side;
+    wrap.style.height = height + "px";
+    const n = Math.max(3, Math.round(height / 260));
+    for (let i = 0; i < n; i++) {
+      const size = 46 + Math.random() * 26;
+      const top = (height / n) * i + Math.random() * 30;
+      const left = Math.random() * 30;
+      const rot = (Math.random() * 16 - 8).toFixed(1);
+      const dur = (3.6 + Math.random() * 1.6).toFixed(2);
+      const delay = (Math.random() * 2).toFixed(2);
+      const el = document.createElement("div");
+      el.className = "scatter-char";
+      el.style.cssText =
+        `top:${top}px; left:${left}px; width:${size}px; opacity:.88; ` +
+        `--sf-r:${rot}deg; --sf-d:${dur}s; animation-delay:${delay}s;`;
+      el.innerHTML = characterSVG(pick(), "char", true);
+      wrap.appendChild(el);
+    }
+    outer.appendChild(wrap);
+  });
+}
+renderScatterChars();
+
+let scatterResizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(scatterResizeTimer);
+  scatterResizeTimer = setTimeout(renderScatterChars, 200);
+});
 
 /* =========================================================
    スクロール追従ヘッダー
